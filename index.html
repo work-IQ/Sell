@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Internet Sell — Live Data Selling</title>
+<style>
+  :root{
+    --bg1:#070617; --bg2:#0b1224;
+    --card:#0f1726; --muted:#9aa4b2;
+    --accent1:#ff4ec7; --accent2:#7c3aed;
+    --danger:#ff4d4f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#eaf6ff;padding:14px;
+  }
+  .wrap{max-width:520px;margin:0 auto}
+  header{display:flex;gap:12px;align-items:center}
+  .logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#061024}
+  h1{margin:0;font-size:18px}
+  .sub{color:var(--muted);font-size:13px}
+  .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));border:1px solid rgba(255,255,255,0.03);padding:14px;border-radius:12px;margin-top:14px;box-shadow:0 8px 30px rgba(0,0,0,0.6)}
+  .muted{color:var(--muted)} .small{font-size:13px;color:var(--muted)}
+  .bignum{font-size:34px;font-weight:800}
+  .row{display:flex;gap:10px;align-items:center}
+  .progress-wrap{background:rgba(255,255,255,0.03);height:14px;border-radius:10px;overflow:hidden;margin-top:10px}
+  .progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent1),var(--accent2));transition:width .2s linear}
+  select,input{background:transparent;border:1px solid rgba(255,255,255,0.04);color:inherit;padding:8px;border-radius:8px}
+  .btn{border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#061024}
+  .btn-stop{background:var(--danger);color:white}
+  .btn-muted{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+  .flex-between{display:flex;justify-content:space-between;align-items:center}
+  .withdraws-list{margin-top:12px;max-height:220px;overflow:auto}
+  .withdraw-item{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px}
+  .tag{padding:6px 10px;border-radius:999px;font-weight:700}
+  .tag-pending{background:rgba(255,255,255,0.03);color:var(--muted)}
+  footer{margin-top:16px;color:var(--muted);font-size:13px;text-align:center}
+  @media (max-width:520px){ .wrap{padding:8px} .bignum{font-size:28px} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">DS</div>
+      <div>
+        <h1>Live Data Selling</h1>
+        <div class="sub">Internet Sell — Dashboard (Demo)</div>
+      </div>
+    </header>
+
+    <!-- Rate -->
+    <div class="card">
+      <div class="flex-between">
+        <div>
+          <div style="font-weight:700">Rate</div>
+          <div class="small">1 GB = <strong>$16.00</strong> → <strong>$0.016/MB</strong></div>
+        </div>
+        <div class="small muted">Daily cap: <strong>1 GB</strong> (resets at 00:00 local)</div>
+      </div>
+    </div>
+
+    <!-- Session Stats -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="muted">Session Data Sold</div>
+          <div class="bignum" id="sessionMB">0 MB</div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Session Earnings</div>
+          <div class="bignum" id="sessionUSD">$0.00</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div class="muted">Daily Progress</div>
+        <div class="progress-wrap"><div class="progress" id="progress"></div></div>
+        <div class="flex-between" style="margin-top:8px">
+          <div class="small" id="dailyText">0 / 1000 MB</div>
+          <div class="small" id="remainingText">Remaining: 1000 MB</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <div style="flex:1">
+          <label class="small">Selling Speed (MB/sec)</label>
+          <select id="speedSelect">
+            <option value="0.5">0.5 MB/sec</option>
+            <option value="1">1 MB/sec</option>
+            <option value="2">2 MB/sec</option>
+            <option value="5">5 MB/sec</option>
+            <option value="10" selected>10 MB/sec</option>
+          </select>
+        </div>
+
+        <div style="width:140px">
+          <label class="small">Preset</label>
+          <select id="presetSelect">
+            <option value="0">-- Quick --</option>
+            <option value="100">100 MB</option>
+            <option value="200">200 MB</option>
+            <option value="500">500 MB</option>
+            <option value="1000">1000 MB</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button id="startBtn" class="btn btn-primary">Start Selling</button>
+        <button id="stopBtn" class="btn btn-stop" style="display:none">Stop Selling</button>
+        <button id="stopWithdrawBtn" class="btn btn-muted">Stop & Withdraw</button>
+      </div>
+
+      <div class="small muted" style="margin-top:10px">
+        Internet must be <strong>ON</strong> while selling. Selling stops automatically when you reach 1 GB for the day. Reset at 00:00 local time.
+      </div>
+    </div>
+
+    <!-- Withdraw -->
+    <div class="card">
+      <div class="flex-between">
+        <div>
+          <div style="font-weight:700">Wallet Balance</div>
+          <div class="small muted">Available to withdraw</div>
+        </div>
+        <div style="text-align:right">
+          <div class="bignum" id="walletUSD">$0.00</div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <label class="small">Withdraw Method</label>
+        <select id="withdrawMethod">
+          <option value="bank">Bank Transfer</option>
+          <option value="crypto">Crypto (BEP20)</option>
+          <option value="upi">UPI</option>
+        </select>
+      </div>
+
+      <div id="withdrawForms" style="margin-top:12px">
+        <div id="bankForm">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="bankName" placeholder="Full name (Beneficiary)" />
+            <input id="bankAcc" placeholder="Account number" />
+            <input id="bankIfsc" placeholder="IFSC code" />
+            <input id="bankPhone" placeholder="Mobile number" />
+            <input id="withdrawAmountBank" placeholder="Amount $ (e.g. 5.00)" />
+            <div style="margin-top:8px"><button id="submitWithdrawBank" class="btn btn-primary">Request Bank Withdraw</button></div>
+          </div>
+        </div>
+
+        <div id="cryptoForm" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="cryptoAddr" placeholder="BEP20 Wallet Address" />
+            <input id="withdrawAmountCrypto" placeholder="Amount $ (e.g. 5.00)" />
+            <div style="margin-top:8px"><button id="submitWithdrawCrypto" class="btn btn-primary">Request Crypto Withdraw</button></div>
+          </div>
+        </div>
+
+        <div id="upiForm" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="upiId" placeholder="UPI ID (example@upi)" />
+            <input id="withdrawAmountUpi" placeholder="Amount $ (e.g. 5.00)" />
+            <div style="margin-top:8px"><button id="submitWithdrawUpi" class="btn btn-primary">Request UPI Withdraw</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="font-weight:700">Pending Withdrawals</div>
+        <div class="withdraws-list" id="pendingList"></div>
+      </div>
+      <div class="small muted" style="margin-top:8px">Minimum withdraw: <strong>$5</strong>. Requests under $5 are not allowed.</div>
+    </div>
+
+    <footer>Demo only — no real payments. Save this file as <strong>index.html</strong> in your repo root for GitHub Pages.</footer>
+  </div>
+
+<script>
+/* Single-file demo app
+   - 1 GB = $16 => $0.016/MB
+   - Daily cap: 1000 MB (resets at device local midnight)
+   - Minimum withdraw: $5
+   - All state saved in localStorage (no login)
+*/
+
+const MB_DAILY_CAP = 1000;
+const PRICE_PER_MB = 16 / 1000; // $ per MB
+const MIN_WITHDRAW = 5.0;
+const STORAGE = 'internetSell_index_v3';
+
+const el = id => document.getElementById(id);
+const sessionMBEl = el('sessionMB'), sessionUSDEl = el('sessionUSD'), walletUSDEl = el('walletUSD');
+const progressEl = el('progress'), dailyTextEl = el('dailyText'), remainingTextEl = el('remainingText');
+const startBtn = el('startBtn'), stopBtn = el('stopBtn'), stopWithdrawBtn = el('stopWithdrawBtn');
+const speedSelect = el('speedSelect'), presetSelect = el('presetSelect');
+const withdrawMethod = el('withdrawMethod'), bankForm = el('bankForm'), cryptoForm = el('cryptoForm'), upiForm = el('upiForm');
+const pendingList = el('pendingList');
+
+let state = { today: dateKey(new Date()), dailyUsed:0, wallet:0, sessions:[], pending:[], active:null };
+let intervalId = null, lastTick = null;
+
+load(); render(); scheduleMidnight(); attach();
+
+function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE);
+    if(raw){ const p = JSON.parse(raw); const now = dateKey(new Date());
+      if(p.today === now) state = p;
+      else { // carry wallet/pending/sessions, reset daily used & active
+        state = p; state.dailyUsed = 0; state.today = now; state.active = null;
+      }
+    }
+  }catch(e){ console.warn(e); }
+}
+function save(){ try{ localStorage.setItem(STORAGE, JSON.stringify(state)); }catch(e){ } }
+function render(){
+  const activeMB = state.active ? round(state.active.mb,3) : 0;
+  sessionMBEl.textContent = activeMB + ' MB';
+  sessionUSDEl.textContent = '$' + format((state.active ? state.active.mb * PRICE_PER_MB : 0).toFixed(2));
+  walletUSDEl.textContent = '$' + format(state.wallet.toFixed(2));
+  const daily = round(state.dailyUsed + (state.active ? state.active.mb : 0),3);
+  const pct = Math.min(100, (daily/MB_DAILY_CAP)*100);
+  progressEl.style.width = pct + '%';
+  dailyTextEl.textContent = Math.round(daily) + ' / ' + MB_DAILY_CAP + ' MB';
+  remainingTextEl.textContent = 'Remaining: ' + Math.max(0, Math.round(MB_DAILY_CAP - daily)) + ' MB';
+  const reached = (state.dailyUsed + (state.active ? state.active.mb:0)) >= MB_DAILY_CAP;
+  if(state.active){ startBtn.style.display='none'; stopBtn.style.display='inline-block'; } else { startBtn.style.display = reached ? 'none' : 'inline-block'; stopBtn.style.display='none'; }
+  renderPending();
+}
+function renderPending(){
+  pendingList.innerHTML = '';
+  if(state.pending.length===0){ pendingList.innerHTML = '<div class="muted small">No pending withdrawals</div>'; return; }
+  state.pending.slice().reverse().forEach(w=>{
+    const wrapper = document.createElement('div'); wrapper.className='withdraw-item';
+    const left = document.createElement('div'); left.style.flex='1';
+    left.innerHTML = `<div style="font-weight:700">${w.method.toUpperCase()} • $${format(w.amount.toFixed(2))}</div>
+                      <div class="small muted">${w.detail||''}</div>
+                      <div class="small muted">Requested: ${new Date(w.requestedAt).toLocaleString()}</div>`;
+    const right = document.createElement('div'); right.style.textAlign='right';
+    right.innerHTML = `<div class="tag tag-pending">Pending</div><div style="margin-top:8px"><button class="btn btn-muted" data-cancel="${w.id}">Cancel</button></div>`;
+    wrapper.appendChild(left); wrapper.appendChild(right); pendingList.appendChild(wrapper);
+  });
+  pendingList.querySelectorAll('[data-cancel]').forEach(btn=>{
+    btn.addEventListener('click', ()=> {
+      const id = btn.getAttribute('data-cancel');
+      cancelWithdraw(id);
+    });
+  });
+}
+function cancelWithdraw(id){
+  const idx = state.pending.findIndex(x=>x.id===id);
+  if(idx===-1) return alert('Request not found');
+  state.wallet = round(state.wallet + state.pending[idx].amount,2);
+  state.pending.splice(idx,1); save(); render(); alert('Withdraw cancelled and refunded.');
+}
+
+function attach(){
+  startBtn.addEventListener('click', startSelling);
+  stopBtn.addEventListener('click', ()=> { if(state.active) finalize(false); else alert('No active session'); });
+  stopWithdrawBtn.addEventListener('click', ()=> { if(state.active) finalize(false); el('withdrawAmountBank').focus(); alert('Selling stopped — create withdraw request'); });
+
+  presetSelect.addEventListener('change', ()=>{
+    const val = +presetSelect.value;
+    if(val>0){
+      if(!confirm(`Start selling ${val} MB now?`)){ presetSelect.value='0'; return; }
+      if(state.active){ alert('Stop current session first'); presetSelect.value='0'; return; }
+      const remain = MB_DAILY_CAP - state.dailyUsed;
+      const allowed = Math.min(remain, val);
+      if(allowed<=0){ alert('No remaining MB today'); presetSelect.value='0'; return; }
+      startAutoPreset(allowed);
+    }
+  });
+
+  withdrawMethod.addEventListener('change', ()=> {
+    const v = withdrawMethod.value; bankForm.style.display = v==='bank'?'block':'none';
+    cryptoForm.style.display = v==='crypto'?'block':'none'; upiForm.style.display = v==='upi'?'block':'none';
+  });
+
+  el('submitWithdrawBank').addEventListener('click', ()=>{
+    const name = el('bankName').value.trim(), acc = el('bankAcc').value.trim(), ifsc = el('bankIfsc').value.trim(), phone = el('bankPhone').value.trim();
+    const amt = el('withdrawAmountBank').value.trim();
+    if(!name||!acc||!ifsc||!phone||!amt) return alert('Fill all bank fields');
+    requestWithdraw('bank', +amt, `${name} • acc:${acc.slice(-4)} • IFSC:${ifsc}`);
+  });
+  el('submitWithdrawCrypto').addEventListener('click', ()=>{
+    const addr = el('cryptoAddr').value.trim(), amt = el('withdrawAmountCrypto').value.trim();
+    if(!addr||!amt) return alert('Fill crypto address and amount');
+    requestWithdraw('crypto', +amt, `BEP20:${addr.slice(0,8)}...${addr.slice(-6)}`);
+  });
+  el('submitWithdrawUpi').addEventListener('click', ()=>{
+    const upi = el('upiId').value.trim(), amt = el('withdrawAmountUpi').value.trim();
+    if(!upi||!amt) return alert('Fill UPI and amount');
+    requestWithdraw('upi', +amt, `UPI:${upi}`);
+  });
+
+  window.addEventListener('online', ()=>console.log('online'));
+  window.addEventListener('offline', ()=>{ if(intervalId) pause('offline'); alert('Network offline — selling paused.'); });
+  window.addEventListener('beforeunload', ()=>{ if(intervalId) clearInterval(intervalId); save(); });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden && intervalId) pause('hidden'); });
+}
+
+function startSelling(){
+  const already = state.dailyUsed + (state.active?state.active.mb:0);
+  if(already >= MB_DAILY_CAP) return alert('Daily limit reached. Come back after midnight.');
+  if(!navigator.onLine) return alert('Internet is offline. Connect to start selling.');
+  state.active = { id:'s'+Date.now(), start: Date.now(), mb:0, speed:+speedSelect.value };
+  lastTick = Date.now();
+  intervalId = setInterval(tick, 200);
+  save(); render();
+}
+
+function startAutoPreset(allowed){
+  state.active = { id:'s'+Date.now(), start:Date.now(), mb:0, speed:+speedSelect.value };
+  lastTick = Date.now();
+  intervalId = setInterval(()=>{
+    tick();
+    if(state.active && state.active.mb >= allowed - 1e-6){ finalize(false); presetSelect.value='0'; }
+  },200);
+  save(); render();
+}
+
+function tick(){
+  if(!state.active) return;
+  if(!navigator.onLine){ pause('offline'); alert('Network offline — selling paused.'); return; }
+  const now = Date.now(); const dt = (now - lastTick)/1000; lastTick = now;
+  let add = state.active.speed * dt; const already = state.dailyUsed + state.active.mb; const can = Math.max(0, MB_DAILY_CAP - already);
+  if(add >= can) add = can;
+  state.active.mb = round(state.active.mb + add,6);
+  if((state.dailyUsed + state.active.mb) >= MB_DAILY_CAP - 1e-6){ finalize(true); alert('Daily cap reached.'); return; }
+  render();
+}
+
+function pause(reason){ if(intervalId) clearInterval(intervalId); intervalId = null; lastTick = null; render(); console.log('paused',reason); }
+
+function finalize(reached){
+  if(!state.active) return;
+  if(intervalId) clearInterval(intervalId); intervalId = null;
+  const sess = { id: state.active.id, start: state.active.start, stop: Date.now(), mb: round(state.active.mb,3), usd: round(state.active.mb*PRICE_PER_MB,2) };
+  state.sessions.push(sess); state.dailyUsed = round(state.dailyUsed + sess.mb,3); state.wallet = round(state.wallet + sess.usd,2); state.active = null;
+  save(); render(); console.log('finalized',sess);
+}
+
+function requestWithdraw(method, amount, detail){
+  amount = round(+amount,2);
+  if(isNaN(amount) || amount <= 0) return alert('Enter valid amount');
+  if(amount < MIN_WITHDRAW) return alert('Minimum withdraw is $' + MIN_WITHDRAW);
+  if(amount > state.wallet + 1e-6) return alert('Insufficient wallet balance');
+  const id = 'w' + Date.now();
+  state.pending.push({ id, method, amount, requestedAt: Date.now(), status:'pending', detail });
+  state.wallet = round(state.wallet - amount,2);
+  save(); render(); alert('Withdraw requested and moved to Pending. Admin must process it.');
+}
+
+function cancelWithdraw(id){
+  const i = state.pending.findIndex(x=>x.id===id);
+  if(i===-1) return alert('Not found');
+  state.wallet = round(state.wallet + state.pending[i].amount,2);
+  state.pending.splice(i,1); save(); render(); alert('Cancelled & refunded.');
+}
+
+function scheduleMidnight(){
+  const now = new Date(); const next = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1,0,0,2);
+  setTimeout(()=>{ midnightReset(); setInterval(midnightReset, 24*3600*1000); }, next - now);
+}
+function midnightReset(){ if(state.active) finalize(false); state.dailyUsed = 0; state.today = dateKey(new Date()); save(); render(); alert('Daily limit reset. You can sell up to 1 GB today.'); }
+
+function round(n, d=2){ return Math.round((n + Number.EPSILON) * Math.pow(10,d)) / Math.pow(10,d); }
+function format(n){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+</script>
+</body>
+</html>
